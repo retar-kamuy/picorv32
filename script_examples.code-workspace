@@ -1,10 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"verilog.logging.enabled": true
-	}
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "verilog.logging.enabled": true,
+    "cpplint.filters": [
+      "-legal/copyright",
+      "-whitespace",
+    ],
+  }
 }
