@@ -20,3 +20,17 @@ vsim -c testbench -voptargs="+acc" -wlf vsim.wlf -do "set WildcardFilter [lsearc
 ## VUnit
 * [testbench_ez.sv](testbench_ez.sv)がSystemVerilogのサンプル
 * [run.py](run.py)が実行スクリプト
+
+## Verilator
+* make test_verilator_scでSystemC実行
+* バイナリ実行時に、"+vcd"フラグを付けるとVCDダンプ
+```bash
+export SYSTEMC_INCLUDE=/usr/local/systemc-2.3.3/include
+export SYSTEMC_LIBDIR=/usr/local/systemc-2.3.3/lib-linux64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SYSTEMC_LIBDIR
+
+verilator --sc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.v test_picorv32.cpp -DCOMPRESSED_ISA --Mdir testbench_verilator_dir
+make -j -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
+testbench_verilator_dir/Vpicorv32_wrapper +vcd
+vcd2wlf testbench.vcd testbench.wlf
+```

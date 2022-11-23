@@ -4,6 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "/usr/share/verilator/include",
+                "/usr/local/systemc-2.3.3/include",
                 "${default}"
             ],
             "defines": [

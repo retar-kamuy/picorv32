@@ -1,2 +1,13 @@
 .venv
 tags
+*.o
+*.map
+*.wlf
+riscv-gnu-toolchain-riscv32i
+testbench_verilator
+testbench_verilator_sc
+testbench_verilator_dir/
+*.bin
+*.elf
+*.hex
+transcript
