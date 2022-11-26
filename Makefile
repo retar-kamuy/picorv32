@@ -57,23 +57,23 @@ test_verilator: testbench_verilator firmware/firmware.hex
 test_verilator_sc: testbench_verilator_sc firmware/firmware.hex
 	./testbench_verilator_sc
 
-testbench.vvp: testbench.v picorv32.v
+testbench.vvp: testbench.v picorv32.sv
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
 
-testbench_rvf.vvp: testbench.v picorv32.v rvfimon.v
+testbench_rvf.vvp: testbench.v picorv32.sv rvfimon.v
 	$(IVERILOG) -o $@ -D RISCV_FORMAL $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
 
-testbench_wb.vvp: testbench_wb.v picorv32.v
+testbench_wb.vvp: testbench_wb.v picorv32.sv
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
 
-testbench_ez.vvp: testbench_ez.v picorv32.v
+testbench_ez.vvp: testbench_ez.v picorv32.sv
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
 
-testbench_sp.vvp: testbench.v picorv32.v
+testbench_sp.vvp: testbench.v picorv32.sv
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) -DSP_TEST $^
 	chmod -x $@
 
@@ -81,14 +81,14 @@ testbench_synth.vvp: testbench.v synth.v
 	$(IVERILOG) -o $@ -DSYNTH_TEST $^
 	chmod -x $@
 
-testbench_verilator: testbench.v picorv32.v testbench.cc
-	$(VERILATOR) --cc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.v testbench.cc \
+testbench_verilator: testbench.v picorv32.sv testbench.cc
+	$(VERILATOR) --cc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.sv testbench.cc \
 			$(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) --Mdir testbench_verilator_dir
 	$(MAKE) -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
 	cp testbench_verilator_dir/Vpicorv32_wrapper testbench_verilator
 
-testbench_verilator_sc: testbench.v picorv32.v test_picorv32.cpp 
-	$(VERILATOR) --sc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.v test_picorv32.cpp  \
+testbench_verilator_sc: testbench.v picorv32.sv test_picorv32.cpp 
+	$(VERILATOR) --sc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.sv test_picorv32.cpp  \
 			$(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) --Mdir testbench_verilator_dir
 	$(MAKE) -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
 	cp testbench_verilator_dir/Vpicorv32_wrapper testbench_verilator_sc
@@ -99,13 +99,13 @@ check-%: check.smt2
 	yosys-smtbmc -s $(subst check-,,$@) -t 30 --dump-vcd check.vcd check.smt2
 	yosys-smtbmc -s $(subst check-,,$@) -t 25 --dump-vcd check.vcd -i check.smt2
 
-check.smt2: picorv32.v
-	yosys -v2 -p 'read_verilog -formal picorv32.v' \
+check.smt2: picorv32.sv
+	yosys -v2 -p 'read_verilog -formal picorv32.sv' \
 	          -p 'prep -top picorv32 -nordff' \
 		  -p 'assertpmux -noinit; opt -fast; dffunmap' \
 		  -p 'write_smt2 -wires check.smt2'
 
-synth.v: picorv32.v scripts/yosys/synth_sim.ys
+synth.v: picorv32.sv scripts/yosys/synth_sim.ys
 	yosys -qv3 -l synth.log scripts/yosys/synth_sim.ys
 
 firmware/firmware.hex: firmware/firmware.bin firmware/makehex.py

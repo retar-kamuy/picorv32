@@ -12,7 +12,7 @@ def pre_config(output_path):
     return True
 
 lib = VU.add_library("lib")
-lib.add_source_files("picorv32.v")
+lib.add_source_files("picorv32.sv")
 lib.set_compile_option("modelsim.vlog_flags", ["+define+COMPRESSED_ISA+DEBUGREGS"])
 
 tb_lib = VU.add_library("tb_lib")
