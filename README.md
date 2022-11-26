@@ -5,7 +5,10 @@
 mkdir .venv
 python3 -m venv .venv
 source .venv/bin/activate
+pip install --upgrade pip
 pip install vunit_hdl
+pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Questa (Bash)
