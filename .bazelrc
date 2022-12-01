@@ -1,0 +1,4 @@
+build --action_env=SYSTEMC_HOME
+build --action_env=SYSTEMC_INCLUDE
+build --action_env=SYSTEMC_LIBDIR
+build --action_env=LD_LIBRARY_PATH

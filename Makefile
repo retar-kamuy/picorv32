@@ -90,7 +90,7 @@ testbench_verilator: testbench.v picorv32.sv testbench.cc
 testbench_verilator_sc: testbench.v picorv32.sv test_picorv32.cpp 
 	$(VERILATOR) --sc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.sv test_picorv32.cpp  \
 			$(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) --Mdir testbench_verilator_dir
-	$(MAKE) -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
+	$(MAKE) -j -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
 	cp testbench_verilator_dir/Vpicorv32_wrapper testbench_verilator_sc
 
 check: check-yices

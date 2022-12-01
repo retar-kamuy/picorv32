@@ -1,4 +1,5 @@
 .venv
+bazel-*
 tags
 *.o
 *.map

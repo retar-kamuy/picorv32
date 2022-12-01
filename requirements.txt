@@ -1,3 +1,2 @@
-#colorama==0.4.5
-./local_wheels/colorama-0.4.5-py2.py3-none-any.whl
+colorama==0.4.5
 vunit-hdl==4.6.0
