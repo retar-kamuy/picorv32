@@ -41,13 +41,18 @@ verilator = rule(
 )
 
 def _example_impl(ctx):
-# https://stackoverflow.com/questions/48545575/how-to-get-workspace-directory-in-bazel-rule
+    #find . -type f -name '*.cpp' -or -name '*.h'
     out_files = []
-    for src in ctx.files.srcs:
-        out_file = ctx.actions.declare_file(src.path)
+    for src in ctx.attr.srcs:
+        if "+incdir+" in src:
+            print(src.split("+incdir+"))
+            src_path = src.split("+incdir+")[1]
+        else:
+            src_path = src
+        out_file = ctx.actions.declare_file(src_path)
         ctx.actions.run_shell(
             outputs = [out_file],
-            command = "cp $(realpath \"%s\") %s" % (src.path, out_file.path),
+            command = "cp $(realpath \"%s\") %s" % (src_path, out_file.path),
             execution_requirements = {"local": "True"},
         )
         out_files.append(out_file)
@@ -57,6 +62,6 @@ def _example_impl(ctx):
 example = rule(
     implementation = _example_impl,
     attrs = {
-        "srcs": attr.label_list(allow_files=True),
+        "srcs": attr.string_list(),
     },
 )

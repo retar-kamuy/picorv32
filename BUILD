@@ -24,5 +24,5 @@ verilator(
 
 example(
     name = "run_example",
-    srcs = ["testbench.v", "picorv32.sv", "test_picorv32.cpp"],
+    srcs = ["testbench.v", "picorv32.sv", "test_picorv32.cpp", "+incdir+test_picorv32.h"],
 )
