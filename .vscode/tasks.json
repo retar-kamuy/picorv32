@@ -12,6 +12,32 @@
                 "panel": "new",
                 "close": false,
             }
+        },
+        {
+            "label": "slang",
+            "type": "shell",
+            "command": "slang",
+            "args": ["-Weverything", "-f", "filelists/filelist.f"],
+            "problemMatcher": {
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
+                "pattern": [
+                    {
+                        "regexp": "(.*):(\\d+):(\\d+):\\s(note|warning|error):\\s(.*)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                ]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
         }
     ]
 }
