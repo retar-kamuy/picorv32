@@ -1,4 +1,4 @@
-load(":verilator.bzl", "verilator")
+load(":verilator.bzl", "verilator", "example")
 
 genrule(
     name = "testbench_verilator_sc",
@@ -19,4 +19,10 @@ verilator(
     arguments = ["--sc", "--exe", "-Wno-lint", "-trace", "-DCOMPRESSED_ISA"],
     top_module = "picorv32_wrapper",
     data = ["firmware/firmware.hex"],
+)
+
+
+example(
+    name = "run_example",
+    srcs = ["testbench.v", "picorv32.sv", "test_picorv32.cpp"],
 )

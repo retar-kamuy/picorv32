@@ -39,3 +39,24 @@ verilator = rule(
     },
     executable = True,
 )
+
+def _example_impl(ctx):
+# https://stackoverflow.com/questions/48545575/how-to-get-workspace-directory-in-bazel-rule
+    out_files = []
+    for src in ctx.files.srcs:
+        out_file = ctx.actions.declare_file(src.path)
+        ctx.actions.run_shell(
+            outputs = [out_file],
+            command = "cp $(realpath \"%s\") %s" % (src.path, out_file.path),
+            execution_requirements = {"local": "True"},
+        )
+        out_files.append(out_file)
+
+    return [DefaultInfo(files = depset(out_files))]
+
+example = rule(
+    implementation = _example_impl,
+    attrs = {
+        "srcs": attr.label_list(allow_files=True),
+    },
+)
