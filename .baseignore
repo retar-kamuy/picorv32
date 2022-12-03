@@ -1,3 +1,4 @@
 .git
 .vscode
 tags
+*.code-workspace

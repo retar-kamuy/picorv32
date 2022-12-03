@@ -13,3 +13,4 @@ testbench_verilator_dir/
 *.hex
 transcript
 vunit_out/
+*.code-workspace
