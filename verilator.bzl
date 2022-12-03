@@ -1,3 +1,25 @@
+VerilogInfo = provider(
+    doc = "list of Verilog files.",
+    fields = {
+        "srcs": "depset of Verilog files",
+        "includes": "depset of include files",
+        "incdirs": "depset of include directories",
+        "data": "depset of data files"
+    },
+)
+
+def _transitive_srcs(deps):
+    return depset(
+        [],
+        transitive = [dep[VerilogInfo].srcs for dep in deps],
+    )
+
+def _transitive_data(deps):
+    return depset(
+        [],
+        transitive = [dep[VerilogInfo].data for dep in deps],
+    )
+
 def _verilator_impl(ctx):
     obj_dir = ctx.actions.declare_file(ctx.label.name)
     executable = ctx.actions.declare_file(ctx.attr.top_module)
@@ -7,6 +29,20 @@ def _verilator_impl(ctx):
     args += ["--top-module", ctx.attr.top_module]
     args += [src.path for src in ctx.files.srcs]
     args += ["--Mdir", obj_dir.basename]
+
+    transitive_srcs = _transitive_srcs([dep for dep in ctx.attr.deps if VerilogInfo in dep])
+    verilog_srcs = [verilog_info_struct.files for verilog_info_struct in transitive_srcs.to_list()]
+    verilog_files = [src for sub_tuple in verilog_srcs for src in sub_tuple.to_list()]
+    args += [src.path for src in verilog_files]
+
+    transitive_data = _transitive_data([dep for dep in ctx.attr.deps if VerilogInfo in dep])
+    verilog_data = [verilog_info_struct.files for verilog_info_struct in transitive_data.to_list()]
+    data_files = [src for sub_tuple in verilog_data for src in sub_tuple.to_list()]
+
+    #for dep in ctx.attr.deps:
+    #    if VerilogInfo in dep:
+    #        for src in dep[VerilogInfo].srcs:
+    #            args += [test.path for test in src.files.to_list()]
 
     if ctx.files.filelists:
         args += ["-f %s" % filelist.path for filelist in ctx.files.filelists]
@@ -25,7 +61,8 @@ def _verilator_impl(ctx):
         execution_requirements = {"local": str(local)},
     )
 
-    runfiles = ctx.runfiles(files = [obj_dir] + ctx.files.data)
+    #runfiles = ctx.runfiles(files = [obj_dir] + ctx.files.data)
+    runfiles = ctx.runfiles(files = [obj_dir] + ctx.files.data + data_files)
     return [DefaultInfo(executable = executable, runfiles = runfiles)]
 
 verilator = rule(
@@ -50,6 +87,7 @@ verilator = rule(
         "local": attr.bool(
             default = False,
         ),
+        "deps": attr.label_list(),
     },
     executable = True,
 )
@@ -95,6 +133,29 @@ example = rule(
         "srcs": attr.string_list(),
         "includes": attr.string_list(
             default = ["."],
+        ),
+    },
+)
+
+def _verilog_library_impl(ctx):
+    return [VerilogInfo(
+        srcs = depset(ctx.attr.srcs),
+        includes = depset(ctx.attr.includes),
+        data = depset(ctx.attr.data),
+    )]
+
+verilog_library = rule(
+    implementation = _verilog_library_impl,
+    attrs = {
+        "srcs": attr.label_list(
+            mandatory = True,
+            allow_files = ["v", "sv", "sva"],
+        ),
+        "includes": attr.label_list(
+            allow_files = ["v", "vh", "sv", "svh", "sva", "h"],
+        ),
+        "data": attr.label_list(
+            allow_files = True,
         ),
     },
 )
