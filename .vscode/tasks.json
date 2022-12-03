@@ -6,11 +6,14 @@
         {
             "label": "Run ctags",
             "type": "shell",
-            "command": "ctags -R --exclude={.vscode,.venv,dhrystone,firmware,picosoc,scripts,tests} -f tags",
+            "command": "ctags -R --exclude={.vscode,.venv,dhrystone,firmware,picosoc,scripts,tests} -f .tags",
             "presentation": {
                 "reveal": "always",
                 "panel": "new",
                 "close": false,
+            },
+            "runOptions": {
+                "runOn": "folderOpen",
             }
         },
         {
@@ -21,7 +24,7 @@
             "problemMatcher": {
                 "fileLocation": [
                     "relative",
-                    "${workspaceFolder}"
+                    "${workspaceFolder}",
                 ],
                 "pattern": [
                     {
@@ -30,13 +33,13 @@
                         "line": 2,
                         "column": 3,
                         "severity": 4,
-                        "message": 5
+                        "message": 5,
                     }
                 ]
             },
             "group": {
                 "kind": "build",
-                "isDefault": false
+                "isDefault": false,
             }
         }
     ]

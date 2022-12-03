@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 ## Questa (Bash)
 * WildcardFilterは2次元アレイをダンプするためのコマンド
-* Questa-ise 22.2の場合、voptargsオプションを付けないと波形がダンプされず、空のwlfファイルが生成される
+* Questa-ise 22.2の場合、voptargsオプションを付けないと波形がダンプされず、空のwlfファイルが生成される。
 ```bash
 #!/usr/bin/env bash
 vlog -sv testbench_ez.sv picorv32.v +define+COMPRESSED_ISA+DEBUGREGS -l vlog.log
@@ -37,3 +37,12 @@ make -j -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
 testbench_verilator_dir/Vpicorv32_wrapper +vcd
 vcd2wlf testbench.vcd testbench.wlf
 ```
+
+## Bazel
+* ルール"testbench_verilator_sc"では、"local=True"へ設定することにより、
+"test_picorv32,h"をsrcsやtoolへ記載しなくともインクルードできるようにしている。
+* run_shellへlocalを設定する場合は以下の設定を追加すること。
+```python
+execution_requirements = {"local": "True"},
+```
+* ファイルリストで読み込んだソースコードに前回ビルド時から変更がなければ、再ビルドは省略される。
