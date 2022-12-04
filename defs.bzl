@@ -2,29 +2,28 @@
 
 load(":provider.bzl", "get_transitive_srcs", "get_transitive_includes", "get_transitive_filelists", "get_transitive_data")
 
+script_template = """\
+verilator {ARGUMENTS} --top-module {TOP_MODULE} {SRCS} {INCDIRS} --Mdir {MDIR}
+make -j -C {MDIR} -f V{TOP_MODULE}.mk
+mv {MDIR} {MDIR_PATH}
+cp {MDIR_PATH}/V{TOP_MODULE} {EXECUTABLE}\
+"""
+
 def _verilator_impl(ctx):
-    obj_dir = ctx.actions.declare_file(ctx.label.name)
+    make_dir = ctx.actions.declare_file(ctx.label.name)
     executable = ctx.actions.declare_file(ctx.attr.top_module)
 
-    args = []
-    args += ctx.attr.arguments
-    args += ["--top-module", ctx.attr.top_module]
-    args += [src.path for src in ctx.files.srcs]
-    args += ["--Mdir", obj_dir.basename]
-
     trans_srcs = get_transitive_srcs(ctx.files.srcs, ctx.attr.deps)
-    args += [src.path for src in trans_srcs.to_list()]
+    srcs = [src.path for src in trans_srcs.to_list()]
 
     trans_includes = get_transitive_includes(ctx.files.includes, ctx.attr.deps)
     includes = [include for include in trans_includes.to_list()]
-
-    args += ["+incdir+%s" % include.path for include in includes]
 
     trans_filelists = get_transitive_filelists(ctx.files.filelists, ctx.attr.deps)
     filelists = [filelist for filelist in trans_filelists.to_list()]
 
     if filelists:
-        args += ["-f %s" % filelist for filelist in filelists]
+        srcs += ["-f %s" % filelist for filelist in filelists]
         local = True
     else:
         local = ctx.attr.local
@@ -32,13 +31,20 @@ def _verilator_impl(ctx):
     trans_data = get_transitive_data(ctx.files.data, ctx.attr.deps)
     verilog_read_data = [data for data in trans_data.to_list()]
 
+    script_content = script_template.format(
+        ARGUMENTS = " ".join(ctx.attr.arguments),
+        TOP_MODULE = ctx.attr.top_module,
+        SRCS = " ".join(srcs),
+        INCDIRS = " ".join(["-I %s" % include.path for include in includes]),
+        MDIR = make_dir.short_path,
+        MDIR_PATH = make_dir.path,
+        EXECUTABLE = executable.path,
+    )
+
     ctx.actions.run_shell(
-        outputs = [obj_dir, executable],
+        outputs = [make_dir, executable],
         inputs = ctx.files.srcs + ctx.files.hdrs + includes + filelists + verilog_read_data,
-        command = "verilator %s && \
-                    make -j -C %s -f V%s.mk && \
-                    cp -r %s %s && \
-                    cp %s/V%s %s" % (" ".join(args), obj_dir.basename, ctx.attr.top_module, obj_dir.basename, obj_dir.path, obj_dir.basename, ctx.attr.top_module, executable.path),
+        command = script_content,
         use_default_shell_env = True,
         execution_requirements = {"local": str(local)},
     )
