@@ -38,5 +38,6 @@ verilog_library(
     name = "testbench",
     srcs = ["testbench.v"],
     includes = [],
+    filelists = ["filelists/filelist.f"],
     data = ["firmware/firmware.hex"],
 )

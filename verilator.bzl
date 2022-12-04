@@ -102,14 +102,6 @@ def _example_impl(ctx):
     #find . -maxdepth 1 -type f -name '*.cpp' -or -name '*.h'
     #find . -name *.JPG | xargs -i cp -p {} /temp
 
-    incdir_list = ctx.actions.declare_directory("%s_incdir" % ctx.attr.name)
-    ctx.actions.run_shell(
-        outputs = [incdir_list],
-        arguments = [incdir_list.path, ctx.attr.includes[0]],
-        command = "mkdir -p $1 && find $2 -maxdepth 1 -type f -name '*.cpp' -or -name '*.h' | xargs -i cp -p $(realpath {}) > $2",
-        execution_requirements = {"local": "True"},
-    )
-
     out_files = []
     for src in ctx.attr.srcs:
         if "+incdir+" in src:
@@ -125,7 +117,7 @@ def _example_impl(ctx):
         )
         out_files.append(out_file)
 
-    return [DefaultInfo(files = depset(out_files + [incdir_list]))]
+    return [DefaultInfo(files = depset(out_files))]
 
 example = rule(
     implementation = _example_impl,
@@ -137,12 +129,37 @@ example = rule(
     },
 )
 
+script_template = """\
+#!/usr/bin/env bash
+while read file; do
+    echo "copy $file to {COPY_DIR}/$file"
+    cp $file {COPY_DIR}
+done
+"""
+
 def _verilog_library_impl(ctx):
-    return [VerilogInfo(
-        srcs = depset(ctx.attr.srcs),
-        includes = depset(ctx.attr.includes),
-        data = depset(ctx.attr.data),
-    )]
+    script = ctx.actions.declare_file("%s-copy.sh" % ctx.label.name)
+    copy_dir = ctx.actions.declare_directory("%s-copyfiles_of_lists" % ctx.label.name)
+    script_content = script_template.format(
+        COPY_DIR = copy_dir.path,
+    )
+    ctx.actions.write(script, script_content)
+
+    script_log = ctx.actions.declare_file("%s-copy.log" % ctx.label.name)
+    ctx.actions.run_shell(
+        outputs = [script_log, copy_dir],
+        command = "mkdir -p %s && cat %s | ./%s > %s" % (copy_dir.path, ctx.files.filelists[0].path, script.path, script_log.path),
+        execution_requirements = {"local": "True"},
+    )
+
+    return [
+        DefaultInfo(files = depset([script, copy_dir, script_log])),
+        VerilogInfo(
+            srcs = depset(ctx.attr.srcs),
+            includes = depset(ctx.attr.includes),
+            data = depset(ctx.attr.data),
+        ),
+    ]
 
 verilog_library = rule(
     implementation = _verilog_library_impl,
@@ -153,6 +170,9 @@ verilog_library = rule(
         ),
         "includes": attr.label_list(
             allow_files = ["v", "vh", "sv", "svh", "sva", "h"],
+        ),
+        "filelists": attr.label_list(
+            allow_files = True,
         ),
         "data": attr.label_list(
             allow_files = True,
