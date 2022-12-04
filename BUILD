@@ -21,7 +21,7 @@ verilator(
     top_module = "picorv32_wrapper",
     #data = ["firmware/firmware.hex"],
     local = True,
-    deps = [":testbench", ":picorv32"],
+    deps = ["picorv32.sv", ":testbench"],
 )
 
 example(
@@ -38,6 +38,6 @@ verilog_library(
     name = "testbench",
     srcs = ["testbench.v"],
     includes = [],
-    filelists = ["filelists/filelist.f"],
+    #filelists = ["filelists/filelist.f"],
     data = ["firmware/firmware.hex"],
 )

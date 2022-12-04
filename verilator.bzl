@@ -2,22 +2,29 @@ VerilogInfo = provider(
     doc = "list of Verilog files.",
     fields = {
         "srcs": "depset of Verilog files",
-        "includes": "depset of include files",
-        "incdirs": "depset of include directories",
+        #"includes": "depset of include files",
+        #"incdirs": "depset of include directories",
+        "filelists": "depset of filelists",
         "data": "depset of data files"
     },
 )
 
-def _transitive_srcs(deps):
+def get_transitive_srcs(srcs, deps):
     return depset(
-        [],
-        transitive = [dep[VerilogInfo].srcs for dep in deps],
+        srcs,
+        transitive = [dep[VerilogInfo].srcs for dep in deps]
     )
 
-def _transitive_data(deps):
+def get_transitive_data(data, deps):
     return depset(
-        [],
+        data,
         transitive = [dep[VerilogInfo].data for dep in deps],
+    )
+
+def get_transitive_filelists(filelists, deps):
+    return depset(
+        filelists,
+        transitive = [dep[VerilogInfo].filelists for dep in deps],
     )
 
 def _verilator_impl(ctx):
@@ -30,29 +37,24 @@ def _verilator_impl(ctx):
     args += [src.path for src in ctx.files.srcs]
     args += ["--Mdir", obj_dir.basename]
 
-    transitive_srcs = _transitive_srcs([dep for dep in ctx.attr.deps if VerilogInfo in dep])
-    verilog_srcs = [verilog_info_struct.files for verilog_info_struct in transitive_srcs.to_list()]
-    verilog_files = [src for sub_tuple in verilog_srcs for src in sub_tuple.to_list()]
-    args += [src.path for src in verilog_files]
+    trans_srcs = get_transitive_srcs(ctx.files.srcs, ctx.attr.deps)
+    args += [src.path for src in trans_srcs.to_list()]
 
-    transitive_data = _transitive_data([dep for dep in ctx.attr.deps if VerilogInfo in dep])
-    verilog_data = [verilog_info_struct.files for verilog_info_struct in transitive_data.to_list()]
-    data_files = [src for sub_tuple in verilog_data for src in sub_tuple.to_list()]
+    trans_filelists = get_transitive_filelists(ctx.files.filelists, ctx.attr.deps)
+    filelists = [filelist for filelist in trans_filelists.to_list()]
 
-    #for dep in ctx.attr.deps:
-    #    if VerilogInfo in dep:
-    #        for src in dep[VerilogInfo].srcs:
-    #            args += [test.path for test in src.files.to_list()]
+    trans_data = get_transitive_data(ctx.files.data, ctx.attr.deps)
+    verilog_read_data = [data for data in trans_data.to_list()]
 
-    if ctx.files.filelists:
-        args += ["-f %s" % filelist.path for filelist in ctx.files.filelists]
+    if filelists:
+        args += ["-f %s" % filelist.path for filelist in filelists]
         local = True
     else:
         local = ctx.attr.local
 
     ctx.actions.run_shell(
         outputs = [obj_dir, executable],
-        inputs = ctx.files.srcs + ctx.files.hdrs,
+        inputs = ctx.files.srcs + ctx.files.hdrs + filelists + verilog_read_data,
         command = "verilator %s && \
                     make -j -C %s -f V%s.mk && \
                     cp -r %s %s && \
@@ -61,8 +63,7 @@ def _verilator_impl(ctx):
         execution_requirements = {"local": str(local)},
     )
 
-    #runfiles = ctx.runfiles(files = [obj_dir] + ctx.files.data)
-    runfiles = ctx.runfiles(files = [obj_dir] + ctx.files.data + data_files)
+    runfiles = ctx.runfiles(files = [obj_dir] + filelists + verilog_read_data)
     return [DefaultInfo(executable = executable, runfiles = runfiles)]
 
 verilator = rule(
@@ -138,34 +139,29 @@ done
 """
 
 def _verilog_library_impl(ctx):
-    script = ctx.actions.declare_file("%s-copy.sh" % ctx.label.name)
-    copy_dir = ctx.actions.declare_directory("%s-copyfiles_of_lists" % ctx.label.name)
-    script_content = script_template.format(
-        COPY_DIR = copy_dir.path,
-    )
-    ctx.actions.write(script, script_content)
-
-    script_log = ctx.actions.declare_file("%s-copy.log" % ctx.label.name)
-    ctx.actions.run_shell(
-        outputs = [script_log, copy_dir],
-        command = "mkdir -p %s && cat %s | ./%s > %s" % (copy_dir.path, ctx.files.filelists[0].path, script.path, script_log.path),
-        execution_requirements = {"local": "True"},
-    )
-
+    trans_srcs = get_transitive_srcs(ctx.files.srcs, ctx.attr.deps)
+    trans_filelists = get_transitive_filelists(ctx.files.filelists, ctx.attr.deps)
+    trans_data = get_transitive_data(ctx.files.data, ctx.attr.deps)
     return [
-        DefaultInfo(files = depset([script, copy_dir, script_log])),
-        VerilogInfo(
-            srcs = depset(ctx.attr.srcs),
-            includes = depset(ctx.attr.includes),
-            data = depset(ctx.attr.data),
-        ),
+        VerilogInfo(srcs = trans_srcs, filelists = trans_filelists, data = trans_data),
+        DefaultInfo(files = trans_srcs),
     ]
+
+    #return [
+    #    VerilogInfo(
+    #        #srcs = depset(ctx.attr.srcs),
+    #        srcs = ctx.attr.srcs,
+    #        #includes = depset(ctx.attr.includes),
+    #        #filelists = depset(ctx.attr.filelists),
+    #        #data = depset(ctx.attr.data),
+    #    ),
+    #]
 
 verilog_library = rule(
     implementation = _verilog_library_impl,
     attrs = {
         "srcs": attr.label_list(
-            mandatory = True,
+            mandatory = False,
             allow_files = ["v", "sv", "sva"],
         ),
         "includes": attr.label_list(
@@ -177,5 +173,6 @@ verilog_library = rule(
         "data": attr.label_list(
             allow_files = True,
         ),
+        "deps": attr.label_list(),
     },
 )
