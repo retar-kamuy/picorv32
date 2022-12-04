@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cpplint.filters": [
+			"-legal/copyright",
+			"-whitespace"
+		],
+		"verilog.ctags.path": "ctags",
+		"verilog.linting.linter": "verilator",
+		"verilog.logging.enabled": true,
+		"vunit.python": ".venv/bin/python"
+	}
+}
